@@ -1,0 +1,4 @@
+psutil==5.9.6
+colorama==0.4.6
+schedule==1.2.1
+mcrcon==0.7.0
