@@ -52,8 +52,8 @@ The monitoring interface shows:
 - Memory usage (MB)
 - CPU usage (%)
 - Active players list
-- Performance metrics are color-coded:
 
+Performance metrics are color-coded:
 - 🟢 Green: Good
 - 🟡 Yellow: Warning
 - 🔴 Red: Critical
