@@ -7,8 +7,8 @@ class ServerConfig:
     RCON_PASSWORD = 'your_rcon_password'
 
     # Schedule Settings
-    START_TIME = time(13, 20)  # Server start time
-    END_TIME = time(13, 30)    # Server end time
+    START_TIME = time(17, 0)  # Server start time
+    END_TIME = time(2, 0)    # Server end time
     SHUTDOWN_WARNINGS = [30, 15, 10, 5, 3, 1]  # Warning intervals in minutes
 
     # Monitoring Settings

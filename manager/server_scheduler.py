@@ -121,9 +121,12 @@ class MinecraftServerScheduler:
         self.logger.info("Initiating server shutdown sequence")
 
         try:
+            previous_minutes = 0
             for minutes in self.warning_times:
                 await self.send_message(self.config.SHUTDOWN_WARNING_MSG.format(minutes=minutes))
-                await asyncio.sleep(minutes * 60 - 10)
+                wait_time = (minutes - previous_minutes) * 60
+                await asyncio.sleep(wait_time)
+                previous_minutes = minutes
 
             for seconds in range(10, 0, -1):
                 await self.send_message(self.config.SHUTDOWN_COUNTDOWN_MSG.format(seconds=seconds))
