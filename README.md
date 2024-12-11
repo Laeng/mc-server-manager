@@ -46,7 +46,6 @@ python -m manager.monitor
 
 ### Monitor Display
 The monitoring interface shows:
-
 - Server online status
 - Current TPS
 - Memory usage (MB)
