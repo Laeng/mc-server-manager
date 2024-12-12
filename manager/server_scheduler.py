@@ -19,6 +19,7 @@ class MinecraftServerScheduler:
         self.shutdown_flag = False
         self.loop = asyncio.new_event_loop()
         self.warning_times = self._calculate_warning_times()
+        self.autosave_warnings = self.config.AUTOSAVE_WARNINGS
         max_warning = max(self.warning_times) if self.warning_times else 1
         self.shutdown_sequence_start = datetime.combine(datetime.now().date(), self.config.END_TIME) - timedelta(minutes=max_warning)
         self.rcon = RconManager.get_instance(
@@ -78,6 +79,33 @@ class MinecraftServerScheduler:
                 continue
         return None
 
+    async def _send_rcon_command(self, command: str) -> Optional[str]:
+        """RCON 명령어 전송"""
+        result = self.rcon.send_command(command)
+        print(f"[RCON] {command}")
+        self.logger.info(f"[RCON] {command}")
+        return result
+
+    async def send_message(self, message: str):
+        """서버 내 메시지 전송"""
+        try:
+            await self._send_rcon_command(f"say {message}")
+        except Exception as e:
+            self.logger.error(f"Failed to send message: {e}")
+
+    async def _send_timed_warnings(self, warning_times: list, warning_msg: str, countdown_msg: str):
+        """공통 경고 메시지 발송 로직"""
+        previous_minutes = 0
+        for minutes in warning_times:
+            await self.send_message(warning_msg.format(minutes=minutes))
+            wait_time = (minutes - previous_minutes) * 60
+            await asyncio.sleep(wait_time)
+            previous_minutes = minutes
+
+        for seconds in range(10, 0, -1):
+            await self.send_message(countdown_msg.format(seconds=seconds))
+            await asyncio.sleep(1)
+
     async def start_server(self):
         """서버 시작 프로세스"""
         self.logger.info("Starting Minecraft server...")
@@ -98,9 +126,10 @@ class MinecraftServerScheduler:
             for _ in range(30):
                 await asyncio.sleep(10)
                 if self._get_java_process() is not None:
-                    await self.send_message(self.config.SERVER_START_MSG)
-                    self.logger.info("Server started successfully")
-                    return True
+                    if await self._send_rcon_command("list"):
+                        await self.send_message(self.config.SERVER_START_MSG)
+                        self.logger.info("Server started successfully")
+                        return True
             
             self.logger.error("Server failed to start within timeout")
             return False
@@ -121,43 +150,55 @@ class MinecraftServerScheduler:
         self.logger.info("Initiating server shutdown sequence")
 
         try:
-            previous_minutes = 0
-            for minutes in self.warning_times:
-                await self.send_message(self.config.SHUTDOWN_WARNING_MSG.format(minutes=minutes))
-                wait_time = (minutes - previous_minutes) * 60
-                await asyncio.sleep(wait_time)
-                previous_minutes = minutes
-
-            for seconds in range(10, 0, -1):
-                await self.send_message(self.config.SHUTDOWN_COUNTDOWN_MSG.format(seconds=seconds))
-                await asyncio.sleep(1)
-
+            await self._send_timed_warnings(
+                self.warning_times,
+                self.config.SHUTDOWN_WARNING_MSG,
+                self.config.SHUTDOWN_COUNTDOWN_MSG
+            )
             await self._send_rcon_command("stop")
             self.logger.info("Shutdown command sent")
             
             await asyncio.sleep(30)
             os.system('taskkill /f /im java.exe 2>nul')
-            
         except Exception as e:
             self.logger.error(f"Error during shutdown: {e}")
         finally:
             self.shutdown_flag = False
 
-    async def send_message(self, message: str):
-        """서버 내 메시지 전송"""
+    async def auto_save(self):
+        """서버 자동 저장 프로세스"""
+        if self.shutdown_flag:
+            return
+            
+        self.logger.info("Initiating server auto-save sequence")
+
         try:
-            await self._send_rcon_command(f"say {message}")
-            self.logger.debug(f"Sent message: {message}")
+            await self._send_timed_warnings(
+                self.autosave_warnings,
+                self.config.AUTOSAVE_WARNING_MSG,
+                self.config.AUTOSAVE_COUNTDOWN_MSG
+            )
+            await self.send_message(self.config.AUTOSAVE_START_MSG)
+            await self._send_rcon_command("save-all")
+            await asyncio.sleep(60)
+            await self.send_message(self.config.AUTOSAVE_COMPLETE_MSG)
         except Exception as e:
-            self.logger.error(f"Failed to send message: {e}")
+            self.logger.error(f"Error during auto-save: {e}")
 
-    async def _send_rcon_command(self, command: str) -> Optional[str]:
-        """RCON 명령어 전송"""
-        return self.rcon.send_command(command)
-
-    async def _check_server_running(self) -> bool:
-        """서버 실행 상태 확인"""
-        return self._get_java_process() is not None
+    async def schedule_autosaves(self):
+        """서버 자동 저장 스케줄 설정"""
+        start_hour = self.config.START_TIME.hour
+        end_hour = self.config.END_TIME.hour
+        if end_hour < start_hour:
+            end_hour += 24
+            
+        save_end_hour = (end_hour - 1) % 24
+        
+        for hour in range(start_hour + 1, save_end_hour):
+            hour = hour % 24
+            schedule.every().day.at(f"{hour:02d}:00").do(
+                lambda: asyncio.create_task(self.auto_save())
+            )
 
     async def health_check(self):
         """서버 상태 점검 및 자동 복구"""
@@ -188,8 +229,14 @@ class MinecraftServerScheduler:
             self.logger.warning("Server running outside operating hours")
             await self.stop_server()
 
+    async def _check_server_running(self) -> bool:
+        """서버 실행 상태 확인"""
+        return self._get_java_process() is not None
+
     async def run(self):
         """서버 매니저 메인 루프"""
+        os.system(f'title Minecraft Server Scheduler ({self.config.START_TIME} - {self.config.END_TIME})')
+
         self.logger.info("Starting server scheduler...")
         self.logger.info(f"Operating hours: {self.config.START_TIME} - {self.config.END_TIME}")
         self.logger.info(f"Shutdown sequence will start at: {self.shutdown_sequence_start.time()}")
@@ -210,6 +257,8 @@ class MinecraftServerScheduler:
         schedule.every(self.config.HEALTH_CHECK_INTERVAL).seconds.do(
             lambda: asyncio.create_task(self.health_check())
         )
+        
+        await self.schedule_autosaves()
         
         try:
             while True:
