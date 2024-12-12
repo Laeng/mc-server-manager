@@ -46,14 +46,13 @@ python -m manager.monitor
 
 ### Monitor Display
 The monitoring interface shows:
-
 - Server online status
 - Current TPS
 - Memory usage (MB)
 - CPU usage (%)
 - Active players list
-- Performance metrics are color-coded:
 
+Performance metrics are color-coded:
 - 🟢 Green: Good
 - 🟡 Yellow: Warning
 - 🔴 Red: Critical
