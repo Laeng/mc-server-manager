@@ -19,6 +19,12 @@ class ServerConfig:
     # Autosave Settings
     AUTOSAVE_WARNINGS = [5, 3, 1]  # Warning intervals in minutes
 
+    # Discord Webhook Settings
+    DISCORD_ENABLED = True
+    WEBHOOK_ID = 'your_webhook_id'
+    WEBHOOK_TOKEN = 'your_webhook_token'
+    THREAD_ID = ''  # Optional, leave empty if not using threads
+
     # Message Templates
     SERVER_START_MSG = "§a[Notice] §fServer is now running!"
     SHUTDOWN_WARNING_MSG = "§e[Notice] §fServer will shutdown in {minutes} minutes"
@@ -27,3 +33,8 @@ class ServerConfig:
     AUTOSAVE_COUNTDOWN_MSG = "§7[Notice] §fSaving in {seconds} seconds!"
     AUTOSAVE_START_MSG = "§7[Notice] §fSaving server..."
     AUTOSAVE_COMPLETE_MSG = "§7[Notice] §fServer save complete!"
+
+    # Discord Message Templates
+    DISCORD_SERVER_START = "🟢 Server has started"
+    DISCORD_SERVER_STOP = "🔴 Server has stopped"
+    DISCORD_SERVER_CRASH = "⚠️ Server crashed unexpectedly. Attempting restart..."

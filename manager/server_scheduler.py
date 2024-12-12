@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from config import ServerConfig
-from utils import LoggerSetup, RconManager
+from utils import LoggerSetup, RconManager, DiscordWebhook
 from server_monitor import MinecraftServerMonitor
 
 class MinecraftServerScheduler:
@@ -16,6 +16,7 @@ class MinecraftServerScheduler:
         self.config = ServerConfig()
         self.logger = LoggerSetup.setup('scheduler')
         self.monitor = MinecraftServerMonitor()
+        self.discord = DiscordWebhook.get_instance(self.config)
         self.shutdown_flag = False
         self.loop = asyncio.new_event_loop()
         self.warning_times = self._calculate_warning_times()
@@ -128,6 +129,7 @@ class MinecraftServerScheduler:
                 if self._get_java_process() is not None:
                     if await self._send_rcon_command("list"):
                         await self.send_message(self.config.SERVER_START_MSG)
+                        await self.discord.send_message(self.config.DISCORD_SERVER_START)
                         self.logger.info("Server started successfully")
                         return True
             
@@ -156,6 +158,7 @@ class MinecraftServerScheduler:
                 self.config.SHUTDOWN_COUNTDOWN_MSG
             )
             await self._send_rcon_command("stop")
+            await self.discord.send_message(self.config.DISCORD_SERVER_STOP)
             self.logger.info("Shutdown command sent")
             
             await asyncio.sleep(30)
@@ -224,6 +227,7 @@ class MinecraftServerScheduler:
         
         if should_be_running and not server_running:
             self.logger.warning("Server offline during operating hours, attempting restart")
+            await self.discord.send_message(self.config.DISCORD_SERVER_CRASH)
             await self.start_server()
         elif not should_be_running and server_running:
             self.logger.warning("Server running outside operating hours")

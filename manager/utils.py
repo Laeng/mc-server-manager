@@ -2,6 +2,7 @@ import logging
 import os
 from datetime import datetime
 import mcrcon
+import requests
 from typing import Optional
 
 class LoggerSetup:
@@ -75,3 +76,41 @@ class RconManager:
             self.connected = False
             self.rcon = None
         return None
+
+class DiscordWebhook:
+    _instance = None
+    
+    def __init__(self, config):
+        if not DiscordWebhook._instance:
+            self.config = config
+            self.webhook_url = f"https://discord.com/api/webhooks/{config.WEBHOOK_ID}/{config.WEBHOOK_TOKEN}"
+            self.logger = LoggerSetup.setup('discord')
+            DiscordWebhook._instance = self
+            
+    @classmethod
+    def get_instance(cls, config=None):
+        if not cls._instance:
+            if not config:
+                raise ValueError("Config required for Discord webhook initialization")
+            return cls(config)
+        return cls._instance
+        
+    async def send_message(self, message: str):
+        """Discord webhook 메시지 전송"""
+        if not self.config.DISCORD_ENABLED:
+            return
+
+        try:
+            webhook_data = {"content": message}
+            url = self.webhook_url
+
+            if self.config.THREAD_ID:
+                url = f"{url}?thread_id={self.config.THREAD_ID}"
+
+            response = requests.post(url, json=webhook_data)
+            if response.status_code != 204:
+                self.logger.error(f"Discord webhook send failed: {response.status_code}")
+            else:
+                self.logger.info(f"Discord webhook sent: {message}")
+        except Exception as e:
+            self.logger.error(f"Error sending Discord webhook: {e}")
