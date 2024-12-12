@@ -153,7 +153,7 @@ class MinecraftServerMonitor:
             if status.players:
                 print("┌" + "─" * 30 + "┐")
                 for player in status.players:
-                    print(f"│ {Fore.YELLOW}➤ {player}{Style.RESET_ALL}" + " " * (29 - len(player)) + "│")
+                    print(f"│ {Fore.YELLOW} {player}{Style.RESET_ALL}" + " " * (29 - len(player)) + "│")
                 print("└" + "─" * 30 + "┘")
             else:
                 print(f"{Fore.YELLOW}No players online{Style.RESET_ALL}")
