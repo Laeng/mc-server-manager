@@ -54,15 +54,14 @@ class MinecraftServerMonitor:
         player_response = self.rcon.send_command("list")
         if player_response:
             self.logger.debug(f"List command response:\n{player_response}")
-            response_lines = player_response.splitlines()
-            for line in response_lines:
+            for line in player_response.splitlines():
                 if "players online:" in line:
                     if "There are 0" in line:
                         players = []
-                    else:
-                        player_list = line.split('online:')[1].strip()
-                        if player_list:
-                            players = [p.strip() for p in player_list.split(',')]
+                else:
+                    player_list = line.split('online:')[1].strip()
+                    if player_list:
+                        players = [p.strip() for p in player_list.split(',')]
     
         tps_response = self.rcon.send_command("forge tps")
         if tps_response:
@@ -122,7 +121,7 @@ class MinecraftServerMonitor:
 
     def _print_status(self, status: ServerStatus, time_left: float):
         """출력 포맷 설정"""
-        print(f"=== Minecraft Server Monitor ===")
+        print(f"======= Minecraft Server Monitor=======")
         print(f"Last check: {status.timestamp}")
         print("-" * 40)
         
@@ -153,7 +152,7 @@ class MinecraftServerMonitor:
             if status.players:
                 print("┌" + "─" * 30 + "┐")
                 for player in status.players:
-                    print(f"│ {Fore.YELLOW} {player}{Style.RESET_ALL}" + " " * (29 - len(player)) + "│")
+                    print(f"│ {Fore.YELLOW} {player}{Style.RESET_ALL}" + " " * (28 - len(player)) + "│")
                 print("└" + "─" * 30 + "┘")
             else:
                 print(f"{Fore.YELLOW}No players online{Style.RESET_ALL}")

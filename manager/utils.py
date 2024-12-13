@@ -53,7 +53,7 @@ class RconManager:
             return cls(host, password, port)
         return cls._instance
         
-    def _connect(self):
+    async def _connect(self):
         try:
             self.rcon = mcrcon.MCRcon(self.host, self.password, self.port)
             self.rcon.connect()
@@ -64,9 +64,9 @@ class RconManager:
             self.rcon = None
             self.connected = False
                 
-    def send_command(self, command: str) -> Optional[str]:
+    async def send_command(self, command: str) -> Optional[str]:
         if not self.connected:
-            self._connect()
+            await self._connect()
             
         try:
             if self.connected and self.rcon:

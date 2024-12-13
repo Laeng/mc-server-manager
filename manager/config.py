@@ -10,6 +10,11 @@ class ServerConfig:
     START_TIME = time(17, 0)  # Server start time
     END_TIME = time(2, 0)    # Server end time
     SHUTDOWN_WARNINGS = [30, 15, 10, 5, 3, 1]  # Warning intervals in minutes
+    
+    # 24/7 Operation Days Configuration
+    # Monday = 0, Tuesday = 1, Wednesday = 2, Thursday = 3
+    # Friday = 4, Saturday = 5, Sunday = 6
+    TWENTYFOUR_HOUR_DAYS = [5, 6]  # Default: Saturday and Sunday
 
     # Monitoring Settings
     MONITOR_REFRESH = 5    # Status check interval
